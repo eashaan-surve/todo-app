@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Calendar, CheckCircle2, Circle, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Calendar, CheckCircle2, Circle, Star, Tag, Briefcase, User, ShoppingCart, Heart, Home, Zap } from 'lucide-react';
+
+const CATEGORIES = [
+  { id: 'work', name: 'Work', icon: Briefcase, color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { id: 'personal', name: 'Personal', icon: User, color: 'bg-purple-100 text-purple-700 border-purple-300' },
+  { id: 'shopping', name: 'Shopping', icon: ShoppingCart, color: 'bg-green-100 text-green-700 border-green-300' },
+  { id: 'health', name: 'Health', icon: Heart, color: 'bg-red-100 text-red-700 border-red-300' },
+  { id: 'home', name: 'Home', icon: Home, color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  { id: 'other', name: 'Other', icon: Zap, color: 'bg-gray-100 text-gray-700 border-gray-300' }
+];
 
 export default function TodoApp() {
   const [todos, setTodos] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [category, setCategory] = useState('personal');
   const [dueDate, setDueDate] = useState('');
   const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -31,6 +42,7 @@ export default function TodoApp() {
         text: inputValue,
         completed: false,
         priority: priority,
+        category: category,
         dueDate: dueDate,
         createdAt: new Date().toISOString(),
         completedAt: null
@@ -39,6 +51,7 @@ export default function TodoApp() {
       setInputValue('');
       setDueDate('');
       setPriority('medium');
+      setCategory('personal');
     }
   };
 
@@ -83,15 +96,24 @@ export default function TodoApp() {
         filter === 'active' ? !todo.completed :
         filter === 'completed' ? todo.completed : true;
       
+      const matchesCategory = categoryFilter === 'all' ? true : todo.category === categoryFilter;
+      
       const matchesSearch = todo.text.toLowerCase().includes(searchTerm.toLowerCase());
       
-      return matchesFilter && matchesSearch;
+      return matchesFilter && matchesCategory && matchesSearch;
     });
   };
 
   const filteredTodos = getFilteredTodos();
   const activeCount = todos.filter(t => !t.completed).length;
   const completedCount = todos.filter(t => t.completed).length;
+
+  const getCategoryStats = () => {
+    return CATEGORIES.map(cat => ({
+      ...cat,
+      count: todos.filter(t => t.category === cat.id && !t.completed).length
+    }));
+  };
 
   const getPriorityStyles = (priority) => {
     switch(priority) {
@@ -142,6 +164,8 @@ export default function TodoApp() {
     });
   };
 
+  const getCategoryById = (id) => CATEGORIES.find(cat => cat.id === id);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
@@ -158,7 +182,7 @@ export default function TodoApp() {
               </div>
             </div>
             
-            <div className="flex gap-4 mt-6">
+            <div className="flex gap-4 mt-6 flex-wrap">
               <div className="bg-white/20 backdrop-blur-md px-6 py-3 rounded-xl">
                 <div className="text-white/80 text-sm font-medium">Active</div>
                 <div className="text-3xl font-bold text-white">{activeCount}</div>
@@ -190,6 +214,19 @@ export default function TodoApp() {
               
               <div className="flex gap-3 flex-wrap items-center">
                 <div className="flex items-center gap-2">
+                  <Tag size={18} className="text-gray-400" />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none bg-white font-medium"
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
                   <Star size={18} className="text-gray-400" />
                   <select
                     value={priority}
@@ -220,6 +257,40 @@ export default function TodoApp() {
                   Add Task
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="px-6 md:px-8 py-4 border-t border-gray-100 bg-white/50">
+            <div className="flex gap-2 flex-wrap items-center">
+              <span className="text-sm font-medium text-gray-600 mr-2">Filter by category:</span>
+              <button
+                onClick={() => setCategoryFilter('all')}
+                className={`px-4 py-2 rounded-xl font-medium transition-all text-sm ${
+                  categoryFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All ({todos.length})
+              </button>
+              {getCategoryStats().map(cat => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoryFilter(cat.id)}
+                    className={`px-4 py-2 rounded-xl font-medium transition-all text-sm flex items-center gap-1.5 border ${
+                      categoryFilter === cat.id
+                        ? cat.color + ' shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {cat.name} ({cat.count})
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -280,7 +351,7 @@ export default function TodoApp() {
               <div className="text-gray-400 mb-4">
                 <Circle size={64} className="mx-auto mb-4 opacity-30" />
                 <p className="text-xl font-medium">
-                  {searchTerm ? 'No tasks match your search' : 'No tasks yet. Start by adding one above!'}
+                  {searchTerm || categoryFilter !== 'all' ? 'No tasks match your filters' : 'No tasks yet. Start by adding one above!'}
                 </p>
               </div>
             </div>
@@ -288,6 +359,8 @@ export default function TodoApp() {
             <div className="space-y-3">
               {filteredTodos.map(todo => {
                 const styles = getPriorityStyles(todo.priority);
+                const categoryInfo = getCategoryById(todo.category);
+                const CategoryIcon = categoryInfo?.icon || Tag;
                 return (
                   <div
                     key={todo.id}
@@ -337,6 +410,11 @@ export default function TodoApp() {
                           </p>
                           
                           <div className="flex flex-wrap gap-3 items-center text-sm">
+                            <span className={`${categoryInfo?.color} px-3 py-1 rounded-full font-medium border flex items-center gap-1.5`}>
+                              <CategoryIcon size={14} />
+                              {categoryInfo?.name}
+                            </span>
+                            
                             <span className={`${styles.badge} px-3 py-1 rounded-full font-medium`}>
                               {todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}
                             </span>
