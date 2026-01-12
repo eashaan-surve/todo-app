@@ -10,3 +10,11 @@ A todo list application built with React and CSS.
 -  Completion timestamps
 -  Automatic local storage
 -  gradient UI design
+
+## Tech Stack
+
+- **React 18** - UI framework
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **LocalStorage API** - Data persistence
